@@ -1,20 +1,17 @@
 package org.tron.trident.core;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.grpc.ClientInterceptor;
 import org.tron.trident.abi.FunctionEncoder;
 import org.tron.trident.abi.datatypes.Function;
-import org.tron.trident.api.GrpcAPI;
-import org.tron.trident.api.GrpcAPI.BytesMessage;
 
+import org.tron.trident.api.GrpcAPI;
 import org.tron.trident.core.contract.Contract;
 import org.tron.trident.api.WalletGrpc;
 import org.tron.trident.api.WalletSolidityGrpc;
 import org.tron.trident.core.contract.ContractFunction;
 import org.tron.trident.core.exceptions.IllegalException;
 import org.tron.trident.core.key.KeyPair;
-import org.tron.trident.core.transaction.BlockId;
 import org.tron.trident.core.transaction.TransactionBuilder;
 import org.tron.trident.core.utils.ByteArray;
 import org.tron.trident.core.utils.Sha256Hash;
@@ -53,12 +50,6 @@ import org.tron.trident.proto.Response.Exchange;
 import org.tron.trident.proto.Response.DelegatedResourceMessage;
 import org.tron.trident.proto.Response.DelegatedResourceList;
 import org.tron.trident.proto.Response.DelegatedResourceAccountIndex;
-import org.tron.trident.api.GrpcAPI.NumberMessage;
-import org.tron.trident.api.GrpcAPI.EmptyMessage;
-import org.tron.trident.api.GrpcAPI.AccountAddressMessage;
-import org.tron.trident.api.GrpcAPI.AccountIdMessage;
-import org.tron.trident.api.GrpcAPI.BlockLimit;
-import org.tron.trident.api.GrpcAPI.PaginatedMessage;
 import org.tron.trident.proto.Contract.WitnessCreateContract;
 import org.tron.trident.proto.Contract.WitnessUpdateContract;
 import org.tron.trident.proto.Contract.ProposalCreateContract;
@@ -84,8 +75,6 @@ import io.grpc.stub.MetadataUtils;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import org.tron.trident.crypto.tuwenitypes.Bytes32;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.util.encoders.Hex;
 import org.tron.trident.proto.Response.NodeList;
@@ -100,7 +89,6 @@ import org.tron.trident.proto.Response.ProposalList;
 import org.tron.trident.proto.Response.ExchangeList;
 import org.tron.trident.proto.Response.TransactionSignWeight;
 import org.tron.trident.proto.Response.TransactionApprovedList;
-import org.tron.trident.proto.Response.PricesResponseMessage;
 
 /**
  * A {@code ApiWrapper} object is the entry point for calling the functions.
@@ -185,8 +173,7 @@ public class ApiWrapper {
      * @deprecated 
      * This method will only be available before TronGrid prohibits the use without API key
      * 
-     * @param hexPrivateKey the binding private key. Operations require private key will all use this unless the private key is specified elsewhere.
-     * @param apiKey this function works with TronGrid, an API key is required.
+     * @param hexPrivateKey the binding private key. Operations require private key will all use this unless the private key is specified elsewhere
      * @return a ApiWrapper object
      */
     @Deprecated
@@ -197,7 +184,7 @@ public class ApiWrapper {
     /**
      * The constuctor for Shasta test net. Use TronGrid as default.
      * @param hexPrivateKey the binding private key. Operations require private key will all use this unless the private key is specified elsewhere.
-     * @param apiKey this function works with TronGrid, an API key is required.
+     * @param hexPrivateKey this function works with TronGrid, an API key is required.
      * @return a ApiWrapper object
      */
     public static ApiWrapper ofShasta(String hexPrivateKey) {
@@ -319,8 +306,8 @@ public class ApiWrapper {
 
     private TransactionCapsule createTransaction(
         Message message, Transaction.Contract.ContractType contractType) throws Exception {
-        BlockExtention solidHeadBlock = blockingStubSolidity.getNowBlock2(EmptyMessage.getDefaultInstance());
-        BlockExtention headBlock = blockingStub.getNowBlock2(EmptyMessage.getDefaultInstance());
+        BlockExtention solidHeadBlock = blockingStubSolidity.getNowBlock2(GrpcAPI.EmptyMessage.getDefaultInstance());
+        BlockExtention headBlock = blockingStub.getNowBlock2(GrpcAPI.EmptyMessage.getDefaultInstance());
 
         return createTransactionCapsuleWithoutValidate(message,contractType,solidHeadBlock,headBlock);
     }
@@ -397,7 +384,7 @@ public class ApiWrapper {
 
     /**
      * broadcast a transaction with the binding account.
-     * @param Transaction a signed transaction ready to be broadcasted
+     * @param txn a signed transaction ready to be broadcasted
      * @return a TransactionReturn object contains the broadcasting result
      * @throws RuntimeException if broadcastin fails
      */
@@ -791,7 +778,7 @@ public class ApiWrapper {
      */
     public DelegatedResourceAccountIndex getDelegatedResourceAccountIndexV2(String address) throws IllegalException {
         ByteString rawAddress = parseAddress(address);
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
             .setValue(rawAddress)
             .build();
         DelegatedResourceAccountIndex responseMessage = blockingStub.getDelegatedResourceAccountIndexV2(request);
@@ -864,7 +851,7 @@ public class ApiWrapper {
      * @throws IllegalException if fail to get now block
      */
     public Block getNowBlock() throws IllegalException {
-        Block block = blockingStub.getNowBlock(EmptyMessage.newBuilder().build());
+        Block block = blockingStub.getNowBlock(GrpcAPI.EmptyMessage.newBuilder().build());
         if(!block.hasBlockHeader()){
             throw new IllegalException("Fail to get latest block.");
         }
@@ -878,7 +865,7 @@ public class ApiWrapper {
      * @throws IllegalException if the parameters are not correct
      */
     public BlockExtention getBlockByNum(long blockNum) throws IllegalException {
-        NumberMessage.Builder builder = NumberMessage.newBuilder();
+        GrpcAPI.NumberMessage.Builder builder = GrpcAPI.NumberMessage.newBuilder();
         builder.setNum(blockNum);
         BlockExtention block = blockingStub.getBlockByNum2(builder.build());
 
@@ -895,7 +882,7 @@ public class ApiWrapper {
      * @throws IllegalException if the parameters are not correct
      */
     public BlockListExtention getBlockByLatestNum(long num) throws IllegalException {
-        NumberMessage numberMessage = NumberMessage.newBuilder().setNum(num).build();
+        GrpcAPI.NumberMessage numberMessage = GrpcAPI.NumberMessage.newBuilder().setNum(num).build();
         BlockListExtention blockListExtention = blockingStub.getBlockByLatestNum2(numberMessage);
 
         if(blockListExtention.getBlockCount() == 0){
@@ -912,7 +899,7 @@ public class ApiWrapper {
      * @throws IllegalException if the parameters are not correct
      */
     public BlockListExtention getBlockByLimitNext(long startNum, long endNum) throws IllegalException {
-        BlockLimit blockLimit = BlockLimit.newBuilder()
+        GrpcAPI.BlockLimit blockLimit =  GrpcAPI.BlockLimit.newBuilder()
                 .setStartNum(startNum)
                 .setEndNum(endNum)
                 .build();
@@ -933,7 +920,7 @@ public class ApiWrapper {
      * @throws IllegalException if fail to get nodeInfo
      */
     public NodeInfo getNodeInfo() throws IllegalException {
-        NodeInfo nodeInfo = blockingStub.getNodeInfo(EmptyMessage.newBuilder().build());
+        NodeInfo nodeInfo = blockingStub.getNodeInfo(GrpcAPI.EmptyMessage.newBuilder().build());
 
         if(nodeInfo.getBlock().isEmpty()){
             throw new IllegalException("Fail to get node info.");
@@ -947,7 +934,7 @@ public class ApiWrapper {
      * @throws IllegalException if fail to get node list
      */
     public NodeList listNodes() throws IllegalException {
-        NodeList nodeList = blockingStub.listNodes(EmptyMessage.newBuilder().build());
+        NodeList nodeList = blockingStub.listNodes(GrpcAPI.EmptyMessage.newBuilder().build());
 
         if(nodeList.getNodesCount() == 0){
             throw new IllegalException("Fail to get node list.");
@@ -962,7 +949,7 @@ public class ApiWrapper {
      * @throws IllegalException no transactions or the blockNum is incorrect
      */
     public TransactionInfoList getTransactionInfoByBlockNum(long blockNum) throws IllegalException {
-        NumberMessage numberMessage = NumberMessage.newBuilder().setNum(blockNum).build();
+        GrpcAPI.NumberMessage numberMessage = GrpcAPI.NumberMessage.newBuilder().setNum(blockNum).build();
         TransactionInfoList transactionInfoList = blockingStub.getTransactionInfoByBlockNum(numberMessage);
         if(transactionInfoList.getTransactionInfoCount() == 0){
             throw new IllegalException("no transactions or the blockNum is incorrect.");
@@ -979,7 +966,7 @@ public class ApiWrapper {
      */
     public TransactionInfo getTransactionInfoById(String txID) throws IllegalException {
         ByteString bsTxid = parseAddress(txID);
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(bsTxid)
                 .build();
         TransactionInfo transactionInfo = blockingStub.getTransactionInfoById(request);
@@ -998,7 +985,7 @@ public class ApiWrapper {
      */
     public Transaction getTransactionById(String txID) throws IllegalException {
         ByteString bsTxid = parseAddress(txID);
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(bsTxid)
                 .build();
         Transaction transaction = blockingStub.getTransactionById(request);
@@ -1016,7 +1003,7 @@ public class ApiWrapper {
      */
     public Account getAccount(String address) {
         ByteString bsAddress = parseAddress(address);
-        AccountAddressMessage accountAddressMessage = AccountAddressMessage.newBuilder()
+        GrpcAPI.AccountAddressMessage accountAddressMessage = GrpcAPI.AccountAddressMessage.newBuilder()
                 .setAddress(bsAddress)
                 .build();
         Account account = blockingStub.getAccount(accountAddressMessage);
@@ -1030,7 +1017,7 @@ public class ApiWrapper {
      */
     public AccountResourceMessage getAccountResource(String address) {
         ByteString bsAddress = parseAddress(address);
-        AccountAddressMessage account = AccountAddressMessage.newBuilder()
+        GrpcAPI.AccountAddressMessage account = GrpcAPI.AccountAddressMessage.newBuilder()
                 .setAddress(bsAddress)
                 .build();
         return blockingStub.getAccountResource(account);
@@ -1043,7 +1030,7 @@ public class ApiWrapper {
      */
     public AccountNetMessage getAccountNet(String address) {
         ByteString bsAddress = parseAddress(address);
-        AccountAddressMessage account = AccountAddressMessage.newBuilder()
+        GrpcAPI.AccountAddressMessage account = GrpcAPI.AccountAddressMessage.newBuilder()
                 .setAddress(bsAddress)
                 .build();
         return blockingStub.getAccountNet(account);
@@ -1058,7 +1045,7 @@ public class ApiWrapper {
 
     public Account getAccountById(String id) {
         ByteString bsId = ByteString.copyFrom(id.getBytes());
-        AccountIdMessage accountId = AccountIdMessage.newBuilder()
+        GrpcAPI.AccountIdMessage accountId = GrpcAPI.AccountIdMessage.newBuilder()
                 .setId(bsId)
                 .build();
         return blockingStub.getAccountById(accountId);
@@ -1093,7 +1080,7 @@ public class ApiWrapper {
      * @throws IllegalException if fail to get chain parameters
      */
     public ChainParameters getChainParameters() throws IllegalException {
-        ChainParameters chainParameters = blockingStub.getChainParameters(EmptyMessage.newBuilder().build());
+        ChainParameters chainParameters = blockingStub.getChainParameters(GrpcAPI.EmptyMessage.newBuilder().build());
 
         if(chainParameters.getChainParameterCount() == 0){
             throw new IllegalException("Fail to get chain parameters.");
@@ -1130,7 +1117,7 @@ public class ApiWrapper {
 
         ByteString addressBS = parseAddress(address);
 
-        BytesMessage bytesMessage = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage bytesMessage = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(addressBS)
                 .build();
 
@@ -1144,7 +1131,7 @@ public class ApiWrapper {
      * @return AssetIssueList
      */
     public AssetIssueList getAssetIssueList() {
-        AssetIssueList assetIssueList = blockingStub.getAssetIssueList(EmptyMessage.newBuilder().build());
+        AssetIssueList assetIssueList = blockingStub.getAssetIssueList(GrpcAPI.EmptyMessage.newBuilder().build());
 
         return assetIssueList;
     }
@@ -1156,7 +1143,7 @@ public class ApiWrapper {
      * @return AssetIssueList, a list of Tokens that succeed the Token located at offset
      */
     public AssetIssueList getPaginatedAssetIssueList(long offset, long limit) {
-        PaginatedMessage pageMessage = PaginatedMessage.newBuilder()
+        GrpcAPI.PaginatedMessage pageMessage = GrpcAPI.PaginatedMessage.newBuilder()
                 .setOffset(offset)
                 .setLimit(limit)
                 .build();
@@ -1172,7 +1159,7 @@ public class ApiWrapper {
      */
     public AssetIssueList getAssetIssueByAccount(String address) {
         ByteString addressBS = parseAddress(address);
-        AccountAddressMessage request = AccountAddressMessage.newBuilder()
+        GrpcAPI.AccountAddressMessage request = GrpcAPI.AccountAddressMessage.newBuilder()
                 .setAddress(addressBS)
                 .build();
         AssetIssueList assetIssueList = blockingStub.getAssetIssueByAccount(request);
@@ -1186,7 +1173,7 @@ public class ApiWrapper {
      */
     public AssetIssueContract getAssetIssueById(String assetId) {
         ByteString assetIdBs = ByteString.copyFrom(assetId.getBytes());
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(assetIdBs)
                 .build();
 
@@ -1201,7 +1188,7 @@ public class ApiWrapper {
      */
     public AssetIssueContract getAssetIssueByName(String name) {
         ByteString assetNameBs = ByteString.copyFrom(name.getBytes());
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(assetNameBs)
                 .build();
 
@@ -1216,7 +1203,7 @@ public class ApiWrapper {
      */
     public AssetIssueList getAssetIssueListByName(String name) {
         ByteString assetNameBs = ByteString.copyFrom(name.getBytes());
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(assetNameBs)
                 .build();
 
@@ -1257,7 +1244,7 @@ public class ApiWrapper {
      * @return ProposalList
      */
     public ProposalList listProposals() {
-        ProposalList proposalList = blockingStub.listProposals(EmptyMessage.newBuilder().build());
+        ProposalList proposalList = blockingStub.listProposals(GrpcAPI.EmptyMessage.newBuilder().build());
 
         return proposalList;
     }
@@ -1272,7 +1259,7 @@ public class ApiWrapper {
     public Proposal getProposalById(String id) throws IllegalException {
         ByteString bsTxid = ByteString.copyFrom(ByteBuffer.allocate(8).putLong(Long.parseLong(id)).array());
 
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(bsTxid)
                 .build();
         Proposal proposal = blockingStub.getProposalById(request);
@@ -1289,7 +1276,7 @@ public class ApiWrapper {
      */
     public WitnessList listWitnesses() {
         WitnessList witnessList = blockingStub
-                .listWitnesses(EmptyMessage.newBuilder().build());
+                .listWitnesses(GrpcAPI.EmptyMessage.newBuilder().build());
         return witnessList;
     }
 
@@ -1299,7 +1286,7 @@ public class ApiWrapper {
      */
     public ExchangeList listExchanges() {
         ExchangeList exchangeList = blockingStub
-                .listExchanges(EmptyMessage.newBuilder().build());
+                .listExchanges(GrpcAPI.EmptyMessage.newBuilder().build());
         return exchangeList;
     }
 
@@ -1312,7 +1299,7 @@ public class ApiWrapper {
     public Exchange getExchangeById(String id) throws IllegalException {
         ByteString bsTxid = ByteString.copyFrom(ByteBuffer.allocate(8).putLong(Long.parseLong(id)).array());
 
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(bsTxid)
                 .build();
         Exchange exchange = blockingStub.getExchangeById(request);
@@ -1508,7 +1495,7 @@ public class ApiWrapper {
      */
     public Account getAccountSolidity(String address) {
         ByteString bsAddress = parseAddress(address);
-        AccountAddressMessage accountAddressMessage = AccountAddressMessage.newBuilder()
+        GrpcAPI.AccountAddressMessage accountAddressMessage = GrpcAPI.AccountAddressMessage.newBuilder()
                 .setAddress(bsAddress)
                 .build();
         Account account = blockingStubSolidity.getAccount(accountAddressMessage);
@@ -1521,7 +1508,7 @@ public class ApiWrapper {
      * @throws IllegalException if fail to get now block
      */
     public BlockExtention getNowBlockSolidity() throws IllegalException {
-        BlockExtention blockExtention = blockingStubSolidity.getNowBlock2(EmptyMessage.newBuilder().build());
+        BlockExtention blockExtention = blockingStubSolidity.getNowBlock2(GrpcAPI.EmptyMessage.newBuilder().build());
 
         if(!blockExtention.hasBlockHeader()){
             throw new IllegalException("Fail to get latest block.");
@@ -1537,7 +1524,7 @@ public class ApiWrapper {
      */
     public Transaction getTransactionByIdSolidity(String txID) throws IllegalException {
         ByteString bsTxid = parseAddress(txID);
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(bsTxid)
                 .build();
         Transaction transaction = blockingStubSolidity.getTransactionById(request);
@@ -1553,12 +1540,12 @@ public class ApiWrapper {
      * @param address address, default hexString
      * @return NumberMessage
      */
-    public NumberMessage getRewardSolidity(String address)  {
+    public GrpcAPI.NumberMessage getRewardSolidity(String address)  {
         ByteString bsAddress = parseAddress(address);
-        BytesMessage bytesMessage = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage bytesMessage = GrpcAPI.BytesMessage.newBuilder()
                 .setValue(bsAddress)
                 .build();
-        NumberMessage numberMessage = blockingStubSolidity.getRewardInfo(bytesMessage);
+        GrpcAPI.NumberMessage numberMessage = blockingStubSolidity.getRewardInfo(bytesMessage);
         return numberMessage;
     }
     //All other solidified APIs end
@@ -1645,8 +1632,8 @@ public class ApiWrapper {
 
     public long getBrokerageInfo(String address) {
         ByteString sr = parseAddress(address);
-        BytesMessage param =
-                BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage param =
+                GrpcAPI.BytesMessage.newBuilder()
                         .setValue(sr)
                         .build();        
         return blockingStub.getBrokerageInfo(param).getNum();
@@ -1696,8 +1683,8 @@ public class ApiWrapper {
      */
     public Contract getContract(String contractAddress) {
         ByteString rawAddr = parseAddress(contractAddress);
-        BytesMessage param =
-                BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage param =
+                GrpcAPI.BytesMessage.newBuilder()
                         .setValue(rawAddr)
                         .build();
 
@@ -1816,7 +1803,7 @@ public class ApiWrapper {
      * @return burn trx amount
      */
     public long getBurnTRX() {
-        GrpcAPI.NumberMessage numberMessage = blockingStub.getBurnTrx(EmptyMessage.getDefaultInstance());
+        GrpcAPI.NumberMessage numberMessage = blockingStub.getBurnTrx(GrpcAPI.EmptyMessage.getDefaultInstance());
         return numberMessage.getNum();
     }
 
@@ -1888,7 +1875,7 @@ public class ApiWrapper {
      * @return get next maintenance time
      */
     public long getNextMaintenanceTime() {
-        GrpcAPI.NumberMessage numberMessage = blockingStub.getNextMaintenanceTime(EmptyMessage.getDefaultInstance());
+        GrpcAPI.NumberMessage numberMessage = blockingStub.getNextMaintenanceTime(GrpcAPI.EmptyMessage.getDefaultInstance());
         return numberMessage.getNum();
     }
 
@@ -1961,7 +1948,7 @@ public class ApiWrapper {
      * @return transaction list information from pending pool
      */
     public GrpcAPI.TransactionIdList getTransactionListFromPending() {
-        GrpcAPI.TransactionIdList transactionIdList = blockingStub.getTransactionListFromPending(EmptyMessage.getDefaultInstance());
+        GrpcAPI.TransactionIdList transactionIdList = blockingStub.getTransactionListFromPending(GrpcAPI.EmptyMessage.getDefaultInstance());
         return transactionIdList;
     }
 
@@ -1971,7 +1958,7 @@ public class ApiWrapper {
      * @return  the size of the pending pool queue
      */
     public long getPendingSize() {
-        GrpcAPI.NumberMessage pendingSize = blockingStub.getPendingSize(EmptyMessage.getDefaultInstance());
+        GrpcAPI.NumberMessage pendingSize = blockingStub.getPendingSize(GrpcAPI.EmptyMessage.getDefaultInstance());
         return pendingSize.getNum();
     }
 
@@ -1986,7 +1973,7 @@ public class ApiWrapper {
      */
     public Transaction getTransactionFromPending(String txId) throws IllegalException {
         ByteString bsTxid = ByteString.copyFrom(ByteArray.fromHexString(txId));
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
             .setValue(bsTxid)
             .build();
 
@@ -2003,7 +1990,7 @@ public class ApiWrapper {
      */
     public Block getBlockById(String blockID) {
         ByteString bsBlockid = parseAddress(blockID);
-        BytesMessage request = BytesMessage.newBuilder()
+        GrpcAPI.BytesMessage request = GrpcAPI.BytesMessage.newBuilder()
             .setValue(bsBlockid)
             .build();
         Block block = blockingStub.getBlockById(request);
@@ -2128,7 +2115,7 @@ public class ApiWrapper {
      *        and after the colon is the bandwidth unit price in sun.
      */
     public Response.PricesResponseMessage getBandwidthPrices() {
-        Response.PricesResponseMessage prices = blockingStub.getBandwidthPrices(EmptyMessage.getDefaultInstance());
+        Response.PricesResponseMessage prices = blockingStub.getBandwidthPrices(GrpcAPI.EmptyMessage.getDefaultInstance());
         return prices;
     }
 
@@ -2143,7 +2130,7 @@ public class ApiWrapper {
      *        and after the colon is the bandwidth unit price in sun.
      */
     public Response.PricesResponseMessage getEnergyPrices() {
-        Response.PricesResponseMessage prices = blockingStub.getEnergyPrices(EmptyMessage.getDefaultInstance());
+        Response.PricesResponseMessage prices = blockingStub.getEnergyPrices(GrpcAPI.EmptyMessage.getDefaultInstance());
         return prices;
     }
 
@@ -2158,7 +2145,7 @@ public class ApiWrapper {
      *        and after the colon is the bandwidth unit price in sun.
      */
     public Response.PricesResponseMessage getMemoFee() {
-        Response.PricesResponseMessage prices = blockingStub.getMemoFee(EmptyMessage.getDefaultInstance());
+        Response.PricesResponseMessage prices = blockingStub.getMemoFee(GrpcAPI.EmptyMessage.getDefaultInstance());
         return prices;
     }
 
@@ -2173,7 +2160,7 @@ public class ApiWrapper {
      *        and after the colon is the bandwidth unit price in sun.
      */
     public Response.PricesResponseMessage getBandwidthPricesOnSolidity() {
-        Response.PricesResponseMessage prices = blockingStubSolidity.getBandwidthPrices(EmptyMessage.getDefaultInstance());
+        Response.PricesResponseMessage prices = blockingStubSolidity.getBandwidthPrices(GrpcAPI.EmptyMessage.getDefaultInstance());
         return prices;
     }
 
@@ -2188,7 +2175,7 @@ public class ApiWrapper {
      *        and after the colon is the bandwidth unit price in sun.
      */
     public Response.PricesResponseMessage getEnergyPricesOnSolidity() {
-        Response.PricesResponseMessage prices = blockingStubSolidity.getEnergyPrices(EmptyMessage.getDefaultInstance());
+        Response.PricesResponseMessage prices = blockingStubSolidity.getEnergyPrices(GrpcAPI.EmptyMessage.getDefaultInstance());
         return prices;
     }
 

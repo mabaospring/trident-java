@@ -9,7 +9,7 @@ import org.tron.trident.abi.datatypes.Address;
 import org.tron.trident.abi.datatypes.Bool;
 import org.tron.trident.abi.datatypes.Function;
 import org.tron.trident.abi.datatypes.generated.Uint256;
-import org.tron.trident.api.GrpcAPI.EmptyMessage;
+import org.tron.trident.api.GrpcAPI;
 import org.tron.trident.proto.Chain.Transaction;
 import org.tron.trident.proto.Contract.TriggerSmartContract;
 import org.tron.trident.proto.Response.BlockExtention;
@@ -26,7 +26,7 @@ public class ApiWrapperTest {
     @Test
     public void testGetNowBlockQuery() {
         ApiWrapper client = ApiWrapper.ofShasta("3333333333333333333333333333333333333333333333333333333333333333");
-        BlockExtention block = client.blockingStub.getNowBlock2(EmptyMessage.newBuilder().build());
+        BlockExtention block = client.blockingStub.getNowBlock2(GrpcAPI.EmptyMessage.newBuilder().build());
 
         System.out.println(block.getBlockHeader());
         assertTrue(block.getBlockHeader().getRawDataOrBuilder().getNumber() > 0);
